@@ -1,0 +1,21 @@
+{
+  "name": "Vale-Shop Admin",
+  "short_name": "Vale-Shop",
+  "description": "Panel de administración de Vale-Shop",
+  "start_url": "./admin-orders.html",
+  "display": "standalone",
+  "background_color": "#0f1a1d",
+  "theme_color": "#0f1a1d",
+  "icons": [
+    {
+      "src": "./assets/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "./assets/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

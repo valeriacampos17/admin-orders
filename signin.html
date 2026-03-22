@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+    <!-- Meta tags específicos para PWA -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Vale-Shop">
+    <meta name="theme-color" content="#0f1a1d">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="Vale-Shop">
+
+    <title>Vale-Shop - Iniciar Sesión</title>
+    <meta name="description" content="Inicia sesión en Vale-Shop para gestionar tus pedidos y acceder a tu cuenta">
+
+    <!-- Manifest y favicons -->
+    <link rel="manifest" href="manifest.json" />
+    <link rel="apple-touch-icon" href="assets/icons/icon-180x180.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192x192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="assets/icons/icon-512x512.png">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="assets/css/main.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .auth-container {
+            width: 100%;
+            max-width: 450px;
+        }
+
+        .auth-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            animation: slideUp 0.5s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .auth-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+
+        .auth-header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .auth-header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .auth-body {
+            padding: 40px 30px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+            position: relative;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .form-group label i {
+            margin-right: 8px;
+            color: #667eea;
+        }
+
+        .input-group {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-group i {
+            position: absolute;
+            left: 15px;
+            color: #999;
+            font-size: 16px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 15px 12px 45px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 15px;
+            transition: all 0.3s;
+            background: #f8f9fa;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .toggle-password {
+            position: absolute;
+            right: 15px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #999;
+            font-size: 16px;
+            padding: 0;
+            z-index: 1;
+        }
+
+        .toggle-password:hover {
+            color: #667eea;
+        }
+
+        .auth-options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            font-size: 14px;
+        }
+
+        .remember-me {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+        .remember-me input {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+
+        .forgot-link {
+            color: #667eea;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .forgot-link:hover {
+            color: #764ba2;
+            text-decoration: underline;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-submit:active {
+            transform: translateY(0);
+        }
+
+        .btn-submit:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .auth-divider {
+            text-align: center;
+            margin: 25px 0;
+            position: relative;
+        }
+
+        .auth-divider::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: #e0e0e0;
+        }
+
+        .auth-divider span {
+            background: white;
+            padding: 0 15px;
+            position: relative;
+            color: #999;
+            font-size: 13px;
+        }
+
+        .social-buttons {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .btn-social {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .btn-social:hover {
+            border-color: #667eea;
+            background: #f8f9fa;
+            transform: translateY(-2px);
+        }
+
+        .btn-google {
+            color: #ea4335;
+        }
+
+        .btn-github {
+            color: #333;
+        }
+
+        .auth-footer {
+            text-align: center;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .auth-footer a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .auth-footer a:hover {
+            text-decoration: underline;
+        }
+
+        .alert {
+            padding: 12px 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            animation: shake 0.5s ease-in-out;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .alert-error {
+            background: #fee;
+            color: #c33;
+            border-left: 4px solid #c33;
+        }
+
+        .alert-success {
+            background: #efe;
+            color: #3c3;
+            border-left: 4px solid #3c3;
+        }
+
+        .alert-info {
+            background: #eef;
+            color: #66c;
+            border-left: 4px solid #66c;
+        }
+
+        .alert i {
+            font-size: 18px;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Panel de depuración */
+        .debug-panel {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.9);
+            color: #0f0;
+            font-family: monospace;
+            font-size: 12px;
+            padding: 10px;
+            border-radius: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 9999;
+            display: none;
+        }
+
+        .debug-panel.show {
+            display: block;
+        }
+
+        .debug-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #333;
+        }
+
+        .debug-header button {
+            background: #333;
+            color: #0f0;
+            border: none;
+            padding: 2px 8px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .debug-log {
+            font-size: 11px;
+            line-height: 1.4;
+        }
+
+        @media (max-width: 480px) {
+            .auth-body {
+                padding: 30px 20px;
+            }
+            
+            .auth-header {
+                padding: 30px 20px;
+            }
+            
+            .auth-header h1 {
+                font-size: 24px;
+            }
+            
+            .social-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <h1>
+                    <i class="fas fa-store"></i>
+                    Vale-Shop
+                </h1>
+                <p>Inicia sesión para continuar</p>
+            </div>
+            
+            <div class="auth-body">
+                <div id="alert-message" style="display: none;"></div>
+                
+                <form id="signin-form">
+                    <div class="form-group">
+                        <label>
+                            <i class="fas fa-envelope"></i>
+                            Correo Electrónico
+                        </label>
+                        <div class="input-group">
+                            <i class="fas fa-envelope"></i>
+                            <input type="email" 
+                                   class="form-control" 
+                                   id="email" 
+                                   name="email" 
+                                   placeholder="tu@email.com"
+                                   required
+                                   autocomplete="email">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>
+                            <i class="fas fa-lock"></i>
+                            Contraseña
+                        </label>
+                        <div class="input-group">
+                            <i class="fas fa-lock"></i>
+                            <input type="password" 
+                                   class="form-control" 
+                                   id="password" 
+                                   name="password" 
+                                   placeholder="••••••••"
+                                   required
+                                   autocomplete="current-password">
+                            <button type="button" class="toggle-password" onclick="togglePassword()">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="auth-options">
+                        <label class="remember-me">
+                            <input type="checkbox" id="remember-me">
+                            <span>Recordarme</span>
+                        </label>
+                        <a href="#" class="forgot-link" id="forgot-password">
+                            ¿Olvidaste tu contraseña?
+                        </a>
+                    </div>
+                    
+                    <button type="submit" class="btn-submit" id="submit-btn">
+                        <i class="fas fa-sign-in-alt"></i>
+                        Iniciar Sesión
+                    </button>
+                </form>
+                
+                <div class="auth-divider">
+                    <span>O continúa con</span>
+                </div>
+                
+                <div class="social-buttons">
+                    <button class="btn-social btn-google" id="google-signin">
+                        <i class="fab fa-google"></i>
+                        Google
+                    </button>
+                    <button class="btn-social btn-github" id="github-signin">
+                        <i class="fab fa-github"></i>
+                        GitHub
+                    </button>
+                </div>
+                
+                <div class="auth-footer">
+                    ¿No tienes una cuenta?
+                    <a href="signup.html">Regístrate aquí</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para recuperar contraseña -->
+    <div id="forgot-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-key"></i> Recuperar Contraseña</h2>
+                <button class="close-modal" onclick="closeForgotModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 20px;">Ingresa tu correo electrónico y te enviaremos un enlace para restablecer tu contraseña.</p>
+                <div class="form-group">
+                    <label>Correo Electrónico</label>
+                    <input type="email" id="reset-email" class="form-control" placeholder="tu@email.com">
+                </div>
+                <button class="btn-submit" id="send-reset-btn" style="margin-top: 10px;">
+                    <i class="fas fa-paper-plane"></i>
+                    Enviar Enlace
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Panel de depuración -->
+    <div class="debug-panel" id="debug-panel">
+        <div class="debug-header">
+            <span>🔍 Log de depuración</span>
+            <button onclick="toggleDebug()">Cerrar</button>
+        </div>
+        <div id="debug-log" class="debug-log"></div>
+    </div>
+
+    <style>
+        .modal {
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .modal .modal-content {
+            background: white;
+            border-radius: 20px;
+            max-width: 450px;
+            width: 90%;
+            animation: slideDown 0.3s;
+        }
+        
+        @keyframes slideDown {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        .modal .modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 20px 20px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal .modal-header h2 {
+            font-size: 20px;
+            margin: 0;
+        }
+        
+        .modal .close-modal {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 28px;
+            cursor: pointer;
+        }
+        
+        .modal .modal-body {
+            padding: 20px;
+        }
+        
+        .debug-toggle {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            background: #333;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            padding: 5px 12px;
+            font-size: 11px;
+            cursor: pointer;
+            z-index: 10000;
+        }
+    </style>
+
+    <button class="debug-toggle" onclick="toggleDebug()">🐛 Debug</button>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "firebase/app": "https://www.gstatic.com/firebasejs/10.14.0/firebase-app.js",
+                "firebase/auth": "https://www.gstatic.com/firebasejs/10.14.0/firebase-auth.js",
+                "firebase/firestore": "https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import { initializeApp } from "firebase/app";
+        import { 
+            getAuth, 
+            signInWithEmailAndPassword, 
+            signInWithPopup, 
+            GoogleAuthProvider, 
+            GithubAuthProvider,
+            sendPasswordResetEmail,
+            setPersistence,
+            browserLocalPersistence,
+            browserSessionPersistence
+        } from "firebase/auth";
+        import { getFirestore, collection, query, where, getDocs, doc, getDoc } from "firebase/firestore";
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBooZYVeqEWugoLudlTLwytNaYGWxD83Wc",
+            authDomain: "vale-shop.firebaseapp.com",
+            databaseURL: "https://vale-shop-default-rtdb.firebaseio.com",
+            projectId: "vale-shop",
+            storageBucket: "vale-shop.appspot.com",
+            messagingSenderId: "280352853383",
+            appId: "1:280352853383:web:2d48393a1426bd8ff2d722",
+            measurementId: "G-Q51W1J1918"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // DOM Elements
+        const form = document.getElementById('signin-form');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const submitBtn = document.getElementById('submit-btn');
+        const rememberCheckbox = document.getElementById('remember-me');
+        const alertDiv = document.getElementById('alert-message');
+        
+        const googleBtn = document.getElementById('google-signin');
+        const githubBtn = document.getElementById('github-signin');
+        const forgotLink = document.getElementById('forgot-password');
+
+        // Función para logs de depuración
+        function debugLog(message, data = null) {
+            const debugPanel = document.getElementById('debug-panel');
+            const debugLog = document.getElementById('debug-log');
+            
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] ${message}${data ? '\n' + JSON.stringify(data, null, 2) : ''}\n\n`;
+            
+            debugLog.innerHTML = logEntry + debugLog.innerHTML;
+            debugLog.innerHTML = debugLog.innerHTML.slice(0, 5000);
+            
+            console.log(message, data || '');
+            
+            // Mostrar panel automáticamente si hay error
+            if (data && data.error) {
+                debugPanel.classList.add('show');
+            }
+        }
+
+        // Mostrar mensaje de alerta
+        function showAlert(message, type = 'error') {
+            alertDiv.style.display = 'block';
+            alertDiv.className = `alert alert-${type}`;
+            alertDiv.innerHTML = `
+                <i class="fas ${type === 'error' ? 'fa-exclamation-circle' : type === 'success' ? 'fa-check-circle' : 'fa-info-circle'}"></i>
+                <span>${message}</span>
+            `;
+            
+            setTimeout(() => {
+                alertDiv.style.animation = 'fadeOut 0.3s';
+                setTimeout(() => {
+                    alertDiv.style.display = 'none';
+                    alertDiv.style.animation = '';
+                }, 300);
+            }, 5000);
+        }
+
+        // Mostrar loading
+        function setLoading(isLoading) {
+            if (isLoading) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<div class="spinner"></div> Iniciando sesión...';
+            } else {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Iniciar Sesión';
+            }
+        }
+
+        // Verificar si el usuario es administrador - VERSIÓN CORREGIDA
+        async function checkIfAdmin(user) {
+            debugLog('🔍 Verificando si es administrador', { uid: user.uid, email: user.email });
+            
+            try {
+                // Método 1: Buscar por uid en la colección users
+                const usersRef = collection(db, "users");
+                const q = query(usersRef, where("uid", "==", user.uid));
+                const querySnapshot = await getDocs(q);
+                
+                debugLog('📊 Resultado de búsqueda por uid', {
+                    empty: querySnapshot.empty,
+                    size: querySnapshot.size
+                });
+                
+                if (!querySnapshot.empty) {
+                    const userDoc = querySnapshot.docs[0];
+                    const userData = userDoc.data();
+                    debugLog('✅ Documento encontrado por uid', {
+                        docId: userDoc.id,
+                        userData: userData
+                    });
+                    
+                    const isAdmin = userData.role === 'admin' || userData.isAdmin === true;
+                    debugLog(`👑 ¿Es admin? ${isAdmin}`, { role: userData.role, isAdmin: userData.isAdmin });
+                    
+                    return isAdmin;
+                }
+                
+                // Método 2: Buscar por email (fallback)
+                debugLog('🔍 Buscando por email como fallback...');
+                const emailQuery = query(usersRef, where("email", "==", user.email));
+                const emailSnapshot = await getDocs(emailQuery);
+                
+                if (!emailSnapshot.empty) {
+                    const userDoc = emailSnapshot.docs[0];
+                    const userData = userDoc.data();
+                    debugLog('✅ Documento encontrado por email', {
+                        docId: userDoc.id,
+                        userData: userData
+                    });
+                    
+                    const isAdmin = userData.role === 'admin' || userData.isAdmin === true;
+                    debugLog(`👑 ¿Es admin? ${isAdmin}`);
+                    
+                    return isAdmin;
+                }
+                
+                // Método 3: Buscar por documento con ID = uid
+                debugLog('🔍 Buscando documento con ID = uid...');
+                const docRef = doc(db, "users", user.uid);
+                const docSnap = await getDoc(docRef);
+                
+                if (docSnap.exists()) {
+                    const userData = docSnap.data();
+                    debugLog('✅ Documento encontrado por ID', {
+                        userData: userData
+                    });
+                    
+                    const isAdmin = userData.role === 'admin' || userData.isAdmin === true;
+                    debugLog(`👑 ¿Es admin? ${isAdmin}`);
+                    
+                    return isAdmin;
+                }
+                
+                debugLog('❌ No se encontró ningún documento para el usuario');
+                return false;
+                
+            } catch (error) {
+                debugLog('❌ Error verificando admin', { error: error.message });
+                console.error('Error verificando admin:', error);
+                return false;
+            }
+        }
+
+        // Guardar sesión
+        async function saveUserSession(user, isAdmin = false) {
+            const userSession = {
+                uid: user.uid,
+                email: user.email,
+                nombre: user.displayName || '',
+                fotoURL: user.photoURL || '',
+                isAdmin: isAdmin,
+                lastLogin: new Date().toISOString()
+            };
+            
+            sessionStorage.setItem('user', JSON.stringify(userSession));
+            debugLog('💾 Sesión guardada', { isAdmin: isAdmin, user: userSession });
+            
+            if (rememberCheckbox.checked) {
+                localStorage.setItem('rememberedUser', JSON.stringify({
+                    email: user.email,
+                    uid: user.uid
+                }));
+                debugLog('💾 Usuario recordado guardado en localStorage');
+            }
+        }
+
+        // Redirigir según rol
+        function redirectBasedOnRole(isAdmin) {
+            debugLog('🔄 Redirigiendo...', { isAdmin: isAdmin });
+            
+            if (isAdmin) {
+                debugLog('👑 Admin detectado, redirigiendo a admin-orders.html');
+                window.location.href = 'admin-orders.html';
+            } else {
+                debugLog('👤 Usuario normal, permaneciendo en signin.html (no redirigir a index)');
+                showAlert('Inicio de sesión exitoso. Bienvenido.', 'success');
+                // Limpiar formulario
+                form.reset();
+                // Opcional: mostrar mensaje de que es usuario normal
+                setTimeout(() => {
+                    // Si quieres redirigir a productos para usuarios normales, descomenta:
+                    // window.location.href = 'products.html';
+                }, 1500);
+            }
+        }
+
+        // Iniciar sesión con email y contraseña
+        async function signInWithEmail(email, password) {
+            debugLog('🚀 Iniciando sesión con email', { email });
+            
+            try {
+                const persistence = rememberCheckbox.checked ? 
+                    browserLocalPersistence : 
+                    browserSessionPersistence;
+                await setPersistence(auth, persistence);
+                debugLog('✅ Persistencia configurada', { remember: rememberCheckbox.checked });
+                
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+                debugLog('✅ Usuario autenticado', { uid: user.uid, email: user.email });
+                
+                const isAdmin = await checkIfAdmin(user);
+                debugLog(`✅ Verificación completada: isAdmin = ${isAdmin}`);
+                
+                await saveUserSession(user, isAdmin);
+                
+                showAlert('¡Inicio de sesión exitoso!', 'success');
+                redirectBasedOnRole(isAdmin);
+                
+            } catch (error) {
+                debugLog('❌ Error en inicio de sesión', { code: error.code, message: error.message });
+                
+                let errorMessage = 'Error al iniciar sesión. ';
+                switch (error.code) {
+                    case 'auth/invalid-email':
+                        errorMessage += 'Correo electrónico inválido.';
+                        break;
+                    case 'auth/user-disabled':
+                        errorMessage += 'Esta cuenta ha sido deshabilitada.';
+                        break;
+                    case 'auth/user-not-found':
+                        errorMessage += 'No existe una cuenta con este correo.';
+                        break;
+                    case 'auth/wrong-password':
+                        errorMessage += 'Contraseña incorrecta.';
+                        break;
+                    case 'auth/too-many-requests':
+                        errorMessage += 'Demasiados intentos fallidos. Intenta más tarde.';
+                        break;
+                    default:
+                        errorMessage += error.message;
+                }
+                
+                showAlert(errorMessage, 'error');
+                setLoading(false);
+            }
+        }
+
+        // Iniciar sesión con proveedor
+        async function signInWithProvider(provider) {
+            setLoading(true);
+            debugLog('🚀 Iniciando sesión con proveedor');
+            
+            try {
+                const result = await signInWithPopup(auth, provider);
+                const user = result.user;
+                debugLog('✅ Usuario autenticado con proveedor', { uid: user.uid, email: user.email });
+                
+                const isAdmin = await checkIfAdmin(user);
+                debugLog(`✅ Verificación completada: isAdmin = ${isAdmin}`);
+                
+                await saveUserSession(user, isAdmin);
+                
+                showAlert('¡Inicio de sesión exitoso!', 'success');
+                redirectBasedOnRole(isAdmin);
+                
+            } catch (error) {
+                debugLog('❌ Error en inicio de sesión con proveedor', { message: error.message });
+                showAlert('Error al iniciar sesión con el proveedor.', 'error');
+                setLoading(false);
+            }
+        }
+
+        // Recuperar contraseña
+        async function resetPassword(email) {
+            debugLog('🔐 Enviando recuperación de contraseña', { email });
+            
+            try {
+                await sendPasswordResetEmail(auth, email);
+                debugLog('✅ Correo de recuperación enviado');
+                showAlert('Se ha enviado un enlace de recuperación a tu correo.', 'success');
+                closeForgotModal();
+            } catch (error) {
+                debugLog('❌ Error enviando correo de recuperación', { message: error.message });
+                
+                let errorMessage = 'Error al enviar el correo. ';
+                switch (error.code) {
+                    case 'auth/invalid-email':
+                        errorMessage += 'Correo electrónico inválido.';
+                        break;
+                    case 'auth/user-not-found':
+                        errorMessage += 'No existe una cuenta con este correo.';
+                        break;
+                    default:
+                        errorMessage += error.message;
+                }
+                
+                showAlert(errorMessage, 'error');
+            }
+        }
+
+        // Event Listeners
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = emailInput.value.trim();
+            const password = passwordInput.value;
+            
+            if (!email || !password) {
+                showAlert('Por favor completa todos los campos.', 'error');
+                return;
+            }
+            
+            setLoading(true);
+            await signInWithEmail(email, password);
+        });
+        
+        googleBtn.addEventListener('click', () => {
+            const provider = new GoogleAuthProvider();
+            signInWithProvider(provider);
+        });
+        
+        githubBtn.addEventListener('click', () => {
+            const provider = new GithubAuthProvider();
+            signInWithProvider(provider);
+        });
+        
+        // Cargar email recordado
+        const rememberedUser = localStorage.getItem('rememberedUser');
+        if (rememberedUser) {
+            try {
+                const user = JSON.parse(rememberedUser);
+                emailInput.value = user.email;
+                rememberCheckbox.checked = true;
+                debugLog('📝 Email recordado cargado', { email: user.email });
+            } catch (e) {
+                console.error('Error cargando usuario recordado:', e);
+            }
+        }
+        
+        emailInput.focus();
+        
+        // Función global para toggle password
+        window.togglePassword = function() {
+            const passwordField = document.getElementById('password');
+            const toggleBtn = document.querySelector('.toggle-password i');
+            
+            if (passwordField.type === 'password') {
+                passwordField.type = 'text';
+                toggleBtn.classList.remove('fa-eye');
+                toggleBtn.classList.add('fa-eye-slash');
+            } else {
+                passwordField.type = 'password';
+                toggleBtn.classList.remove('fa-eye-slash');
+                toggleBtn.classList.add('fa-eye');
+            }
+        };
+        
+        // Modal de recuperación
+        const forgotModal = document.getElementById('forgot-modal');
+        
+        window.openForgotModal = function() {
+            forgotModal.style.display = 'flex';
+            document.getElementById('reset-email').value = emailInput.value;
+        };
+        
+        window.closeForgotModal = function() {
+            forgotModal.style.display = 'none';
+        };
+        
+        forgotLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            openForgotModal();
+        });
+        
+        const sendResetBtn = document.getElementById('send-reset-btn');
+        sendResetBtn.addEventListener('click', async () => {
+            const resetEmail = document.getElementById('reset-email').value.trim();
+            
+            if (!resetEmail) {
+                showAlert('Por favor ingresa tu correo electrónico.', 'error');
+                return;
+            }
+            
+            sendResetBtn.disabled = true;
+            sendResetBtn.innerHTML = '<div class="spinner"></div> Enviando...';
+            
+            await resetPassword(resetEmail);
+            
+            sendResetBtn.disabled = false;
+            sendResetBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar Enlace';
+        });
+        
+        window.onclick = (event) => {
+            if (event.target === forgotModal) {
+                closeForgotModal();
+            }
+        };
+        
+        // Verificar si ya hay sesión activa
+        const currentUser = sessionStorage.getItem('user');
+        if (currentUser) {
+            try {
+                const user = JSON.parse(currentUser);
+                debugLog('🔍 Sesión existente encontrada', user);
+                if (user.isAdmin) {
+                    debugLog('👑 Admin con sesión activa, redirigiendo');
+                    window.location.href = 'admin-orders.html';
+                } else {
+                    debugLog('👤 Usuario normal con sesión activa, permaneciendo en signin');
+                    // Limpiar sesión para que pueda iniciar sesión de nuevo
+                    sessionStorage.removeItem('user');
+                }
+            } catch (e) {
+                console.error('Error verificando sesión:', e);
+            }
+        }
+        
+        // Debug toggle
+        window.toggleDebug = function() {
+            const panel = document.getElementById('debug-panel');
+            panel.classList.toggle('show');
+        };
+        
+        debugLog('🚀 Página cargada', { url: window.location.href, timestamp: new Date().toISOString() });
+    </script>
+</body>
+
+</html>

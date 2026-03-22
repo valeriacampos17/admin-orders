@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Notificaciones</title>
+</head>
+<body>
+    <h1>Test de Notificaciones Vale-Shop</h1>
+    <button onclick="testNotification()">Probar Notificación</button>
+    
+    <script type="module">
+        import { getMessaging, getToken } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-messaging.js";
+        import { app } from './assets/js/firebase.js';
+        
+        window.testNotification = async () => {
+            const messaging = getMessaging(app);
+            const registration = await navigator.serviceWorker.register('/service-worker.js');
+            
+            const token = await getToken(messaging, {
+                vapidKey: 'BO905tgtG6e5FIrh-d9bIXVZuL6cv024kw1ygHLDwrrMk55S06h7elY0YuKKpNR4egBoSabvG-OS6kbGTrfF9A0',
+                serviceWorkerRegistration: registration
+            });
+            
+            console.log('Token:', token);
+            alert('Token obtenido: ' + token);
+            
+            // Simular notificación
+            registration.showNotification('Test Vale-Shop', {
+                body: 'Esta es una notificación de prueba',
+                icon: '/assets/icons/icon-192x192.png'
+            });
+        };
+    </script>
+</body>
+</html>
