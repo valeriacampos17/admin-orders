@@ -493,6 +493,21 @@
             }
         }
 
+        /* Banner de advertencia */
+        .warning-banner {
+            background: #fff3cd;
+            color: #856404;
+            padding: 10px 20px;
+            text-align: center;
+            font-size: 14px;
+            display: none;
+            border-bottom: 1px solid #ffeeba;
+        }
+
+        .warning-banner i {
+            margin-right: 8px;
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
 
@@ -524,6 +539,12 @@
 </head>
 
 <body>
+    <!-- Banner de advertencia para Service Worker -->
+    <div id="sw-warning" class="warning-banner" style="display: none;">
+        <i class="fas fa-exclamation-triangle"></i>
+        <span id="sw-warning-message">Service Worker no disponible. Las notificaciones push pueden no funcionar correctamente.</span>
+    </div>
+
     <div class="admin-header">
         <div class="admin-header-content">
             <h1>
@@ -619,7 +640,7 @@
 
     <script type="module">
         import { getAuth, onAuthStateChanged } from "firebase/auth";
-        import { getFirestore, collection, getDocs, query, orderBy, onSnapshot, doc, updateDoc, where, Timestamp } from "firebase/firestore";
+        import { getFirestore, collection, getDocs, query, orderBy, onSnapshot, doc, updateDoc, where, addDoc } from "firebase/firestore";
         import { getMessaging, getToken, onMessage } from "firebase/messaging";
         import { initializeApp } from "firebase/app";
 
@@ -642,21 +663,56 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const messaging = getMessaging(app);
-
+        
         let currentUser = null;
         let orders = [];
         let currentFilter = 'all';
         let searchTerm = '';
         let unsubscribeOrders = null;
         let notificationPermissionGranted = false;
+        let swRegistered = false;
 
         // ==================== SISTEMA DE NOTIFICACIONES ====================
+
+        // Registrar Service Worker con múltiples rutas de fallback
+        async function registerServiceWorker() {
+            const swPaths = [
+                './service-worker.js',
+                '/admin-orders/service-worker.js',
+                '/service-worker.js'
+            ];
+            
+            for (const path of swPaths) {
+                try {
+                    const registration = await navigator.serviceWorker.register(path);
+                    console.log(`✅ Service Worker registrado en: ${path}`, registration.scope);
+                    swRegistered = true;
+                    return registration;
+                } catch (error) {
+                    console.log(`❌ Falló registro en ${path}:`, error.message);
+                }
+            }
+            
+            // Mostrar banner de advertencia
+            const banner = document.getElementById('sw-warning');
+            if (banner) {
+                banner.style.display = 'block';
+                document.getElementById('sw-warning-message').innerHTML = 
+                    '⚠️ Service Worker no encontrado. Las notificaciones push pueden no funcionar. Asegúrate de que el archivo service-worker.js esté en la carpeta /admin-orders/';
+            }
+            
+            return null;
+        }
 
         // Solicitar permiso y obtener token
         async function requestNotificationPermission() {
             if (!('Notification' in window)) {
                 console.log('Este navegador no soporta notificaciones');
+                return false;
+            }
+
+            if (!window.isSecureContext) {
+                console.log('Notificaciones requieren HTTPS o localhost');
                 return false;
             }
 
@@ -669,24 +725,32 @@
                 }
 
                 notificationPermissionGranted = true;
-                console.log('Permiso de notificaciones concedido');
+                console.log('✅ Permiso de notificaciones concedido');
                 
                 // Registrar Service Worker
-                let registration;
-                if (navigator.serviceWorker) {
-                    registration = await navigator.serviceWorker.register('/service-worker.js');
-                    console.log('Service Worker registrado');
+                let registration = await navigator.serviceWorker.getRegistration();
+                if (!registration) {
+                    registration = await registerServiceWorker();
                 }
+                
+                // Solo obtener token FCM si el Service Worker está registrado
+                if (registration && window.firebaseMessaging) {
+                    try {
+                        const messaging = getMessaging(app);
+                        const token = await getToken(messaging, {
+                            vapidKey: VAPID_KEY,
+                            serviceWorkerRegistration: registration
+                        });
 
-                // Obtener token FCM
-                const token = await getToken(messaging, {
-                    vapidKey: VAPID_KEY,
-                    serviceWorkerRegistration: registration
-                });
-
-                if (token) {
-                    console.log('Token FCM obtenido:', token);
-                    await saveTokenToFirestore(token);
+                        if (token) {
+                            console.log('✅ Token FCM obtenido:', token);
+                            await saveTokenToFirestore(token);
+                        }
+                    } catch (fcmError) {
+                        console.log('FCM no disponible, usando notificaciones nativas:', fcmError.message);
+                    }
+                } else {
+                    console.log('Service Worker no registrado, usando solo notificaciones nativas');
                 }
                 
                 return true;
@@ -718,11 +782,11 @@
                 if (querySnapshot.empty) {
                     tokenData.createdAt = new Date().toISOString();
                     await addDoc(collection(db, "tokens"), tokenData);
-                    console.log('Token guardado');
+                    console.log('✅ Token guardado en Firestore');
                 } else {
                     const tokenDoc = querySnapshot.docs[0];
                     await updateDoc(doc(db, "tokens", tokenDoc.id), tokenData);
-                    console.log('Token actualizado');
+                    console.log('✅ Token actualizado en Firestore');
                 }
             } catch (error) {
                 console.error('Error guardando token:', error);
@@ -731,27 +795,42 @@
 
         // Escuchar mensajes en primer plano
         function listenForMessages() {
-            onMessage(messaging, (payload) => {
-                console.log('Mensaje recibido:', payload);
-                
-                if (Notification.permission === 'granted' && payload.notification) {
-                    new Notification(payload.notification.title || 'Nuevo Pedido', {
-                        body: payload.notification.body || 'Hay un nuevo pedido pendiente',
-                        icon: payload.notification.icon || '/assets/icons/icon-192x192.png'
+            try {
+                const messaging = getMessaging(app);
+                onMessage(messaging, (payload) => {
+                    console.log('📨 Mensaje recibido:', payload);
+                    
+                    if (Notification.permission === 'granted' && payload.notification) {
+                        new Notification(payload.notification.title || 'Nuevo Pedido', {
+                            body: payload.notification.body || 'Hay un nuevo pedido pendiente',
+                            icon: payload.notification.icon || './assets/icons/icon-192x192.png'
+                        });
+                    }
+                    
+                    showToast({
+                        title: payload.notification?.title || 'Nuevo Pedido',
+                        message: payload.notification?.body || 'Hay un nuevo pedido pendiente',
+                        type: 'info'
                     });
-                }
-                
-                showToast({
-                    title: payload.notification?.title || 'Nuevo Pedido',
-                    message: payload.notification?.body || 'Hay un nuevo pedido pendiente',
-                    type: 'info'
                 });
-            });
+            } catch (error) {
+                console.log('FCM no disponible para mensajes en primer plano:', error.message);
+            }
         }
 
         // Mostrar toast
         function showToast({ title, message, type = 'success', duration = 5000 }) {
-            const toastContainer = document.getElementById('toast-container') || createToastContainer();
+            let toastContainer = document.getElementById('toast-container');
+            if (!toastContainer) {
+                toastContainer = document.createElement('div');
+                toastContainer.id = 'toast-container';
+                toastContainer.style.position = 'fixed';
+                toastContainer.style.bottom = '20px';
+                toastContainer.style.right = '20px';
+                toastContainer.style.zIndex = '1000';
+                document.body.appendChild(toastContainer);
+            }
+            
             const toast = document.createElement('div');
             toast.className = 'toast-notification';
             
@@ -761,10 +840,17 @@
                 warning: '#f39c12',
                 info: '#3498db'
             };
+            
+            const icons = {
+                success: 'fa-check-circle',
+                error: 'fa-exclamation-circle',
+                warning: 'fa-exclamation-triangle',
+                info: 'fa-info-circle'
+            };
 
             toast.style.borderLeftColor = colors[type];
             toast.innerHTML = `
-                <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}" style="color: ${colors[type]}"></i>
+                <i class="fas ${icons[type]}" style="color: ${colors[type]}"></i>
                 <div class="toast-content">
                     <div class="toast-title">${title}</div>
                     <div class="toast-message">${message}</div>
@@ -782,34 +868,26 @@
             }, duration);
         }
 
-        function createToastContainer() {
-            const container = document.createElement('div');
-            container.id = 'toast-container';
-            container.style.position = 'fixed';
-            container.style.bottom = '20px';
-            container.style.right = '20px';
-            container.style.zIndex = '1000';
-            document.body.appendChild(container);
-            return container;
-        }
-
         // Mostrar notificación de nuevo pedido
         function showNewOrderNotification(order) {
             if (notificationPermissionGranted) {
-                new Notification('📦 Nuevo Pedido Recibido', {
-                    body: `Pedido #${order.id?.slice(-6)} - ${order.customerName || 'Cliente'}\nTotal: $${(order.total || 0).toFixed(2)}`,
-                    icon: '/assets/icons/icon-192x192.png',
-                    requireInteraction: true
-                });
+                try {
+                    new Notification('📦 Nuevo Pedido Recibido', {
+                        body: `Pedido #${order.id?.slice(-6)} - ${order.customerName || 'Cliente'}\nTotal: $${(order.total || 0).toFixed(2)}`,
+                        icon: './assets/icons/icon-192x192.png',
+                        requireInteraction: true
+                    });
+                } catch (e) {
+                    console.log('Error mostrando notificación nativa:', e);
+                }
             }
 
             showToast({
-                title: 'Nuevo Pedido',
+                title: '📦 Nuevo Pedido',
                 message: `Pedido #${order.id?.slice(-6)} de ${order.customerName || 'Cliente'} por $${(order.total || 0).toFixed(2)}`,
                 type: 'success'
             });
 
-            // Reproducir sonido
             playNotificationSound();
         }
 
@@ -828,16 +906,20 @@
         // Probar notificación
         function testNotification() {
             if (notificationPermissionGranted) {
-                new Notification('🔔 Notificación de Prueba', {
-                    body: 'Las notificaciones funcionan correctamente',
-                    icon: '/assets/icons/icon-192x192.png'
-                });
+                try {
+                    new Notification('🔔 Notificación de Prueba', {
+                        body: 'Las notificaciones funcionan correctamente',
+                        icon: './assets/icons/icon-192x192.png'
+                    });
+                } catch (e) {
+                    console.log('Error mostrando notificación de prueba:', e);
+                }
             }
             
             showToast({
                 title: 'Notificación de Prueba',
-                message: 'El sistema de notificaciones está funcionando',
-                type: 'success'
+                message: notificationPermissionGranted ? '✅ Las notificaciones están funcionando' : '⚠️ Permiso de notificaciones no concedido',
+                type: notificationPermissionGranted ? 'success' : 'warning'
             });
         }
 
@@ -1125,7 +1207,7 @@
                 });
 
                 if (isAdmin) {
-                    console.log('Administrador autenticado');
+                    console.log('✅ Administrador autenticado:', user.email);
                     await requestNotificationPermission();
                     listenForMessages();
                     loadOrdersRealtime();
@@ -1205,6 +1287,8 @@
                 }
             });
         }
+        
+        console.log('🚀 Panel Administrativo cargado correctamente');
     </script>
 
 </body>
