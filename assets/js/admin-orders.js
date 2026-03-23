@@ -1,9 +1,8 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, collection, query, orderBy, onSnapshot, doc, updateDoc, where, getDocs, addDoc } from "firebase/firestore";
-import { getMessaging, getToken, onMessage } from "firebase/messaging";
 
-// Firebase configuration
+// Firebase configuration (misma que en tu firebase.js)
 const firebaseConfig = {
     apiKey: "AIzaSyBooZYVeqEWugoLudlTLwytNaYGWxD83Wc",
     authDomain: "vale-shop.firebaseapp.com",
@@ -11,16 +10,26 @@ const firebaseConfig = {
     projectId: "vale-shop",
     storageBucket: "vale-shop.appspot.com",
     messagingSenderId: "280352853383",
-    appId: "1:280352853383:web:2d48393a1426bd8ff2d722"
+    appId: "1:280352853383:web:2d48393a1426bd8ff2d722",
+    measurementId: "G-Q51W1J1918"
 };
-
-const VAPID_KEY = 'BO905tgtG6e5FIrh-d9bIXVZuL6cv024kw1ygHLDwrrMk55S06h7elY0YuKKpNR4egBoSabvG-OS6kbGTrfF9A0';
 
 // Inicializar Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-const messaging = getMessaging(app);
+
+// Messaging opcional
+let messaging = null;
+try {
+    if (window.isSecureContext && 'Notification' in window) {
+        const { getMessaging } = await import("firebase/messaging");
+        messaging = getMessaging(app);
+        console.log('✅ Firebase Messaging inicializado');
+    }
+} catch (error) {
+    console.log('⚠️ Firebase Messaging no disponible:', error.message);
+}
 
 // Variables globales
 let currentUser = null;
@@ -52,20 +61,27 @@ async function registerSW() {
 }
 
 async function requestNotificationPermission() {
-    if (!('Notification' in window)) return false;
+    if (!('Notification' in window)) {
+        console.log('❌ Notificaciones no soportadas');
+        return false;
+    }
+
     if (Notification.permission === 'granted') {
         notificationPermission = true;
+        console.log('✅ Notificaciones ya permitidas');
         return true;
     }
+
     if (Notification.permission !== 'denied') {
         const permission = await Notification.requestPermission();
         notificationPermission = permission === 'granted';
 
-        if (notificationPermission && currentUser) {
+        if (notificationPermission && currentUser && messaging) {
             const registration = await registerSW();
             try {
+                const { getToken } = await import("firebase/messaging");
                 const token = await getToken(messaging, {
-                    vapidKey: VAPID_KEY,
+                    vapidKey: 'BO905tgtG6e5FIrh-d9bIXVZuL6cv024kw1ygHLDwrrMk55S06h7elY0YuKKpNR4egBoSabvG-OS6kbGTrfF9A0',
                     serviceWorkerRegistration: registration
                 });
                 console.log('✅ Token FCM:', token);
@@ -79,11 +95,13 @@ async function requestNotificationPermission() {
                     createdAt: new Date().toISOString()
                 });
             } catch (fcmError) {
-                console.log('FCM no disponible:', fcmError);
+                console.log('⚠️ FCM no disponible:', fcmError.message);
             }
         }
         return notificationPermission;
     }
+
+    console.log('❌ Permiso de notificaciones denegado');
     return false;
 }
 
@@ -117,14 +135,18 @@ function showToast({ title, message, type = 'success' }) {
 
 function showNewOrderNotification(order) {
     if (notificationPermission) {
-        new Notification('📦 Nuevo Pedido', {
-            body: `Pedido #${order.id?.slice(-6)} - ${order.customerName || 'Cliente'} - $${(order.total || 0).toFixed(2)}`,
-            icon: './assets/icons/icon-192x192.png'
-        });
+        try {
+            new Notification('📦 Nuevo Pedido', {
+                body: `Pedido #${order.id?.slice(-6)} - ${order.userName || 'Cliente'} - $${(order.total || 0).toFixed(2)}`,
+                icon: './assets/icons/icon-192x192.png'
+            });
+        } catch (e) {
+            console.log('Error mostrando notificación:', e);
+        }
     }
     showToast({
         title: '📦 Nuevo Pedido',
-        message: `Pedido #${order.id?.slice(-6)} de ${order.customerName || 'Cliente'}`,
+        message: `Pedido #${order.id?.slice(-6)} de ${order.userName || 'Cliente'}`,
         type: 'success'
     });
 
@@ -138,10 +160,14 @@ function showNewOrderNotification(order) {
 
 function testNotification() {
     if (notificationPermission) {
-        new Notification('🔔 Prueba', {
-            body: 'Notificación funcionando',
-            icon: './assets/icons/icon-192x192.png'
-        });
+        try {
+            new Notification('🔔 Prueba', {
+                body: 'Notificación funcionando',
+                icon: './assets/icons/icon-192x192.png'
+            });
+        } catch (e) {
+            console.log('Error:', e);
+        }
     }
     showToast({
         title: 'Prueba',
@@ -152,6 +178,29 @@ function testNotification() {
 
 // ==================== PEDIDOS ====================
 
+// Función para obtener TODOS los pedidos (para admin)
+async function getAllOrders() {
+    try {
+        const ordersRef = collection(db, "orders");
+        const q = query(ordersRef, orderBy("date", "desc"));
+        const querySnapshot = await getDocs(q);
+
+        const orders = [];
+        querySnapshot.forEach((doc) => {
+            orders.push({
+                id: doc.id,
+                ...doc.data()
+            });
+        });
+
+        return orders;
+    } catch (e) {
+        console.error("Error obteniendo todos los pedidos: ", e);
+        return [];
+    }
+}
+
+// Escuchar cambios en tiempo real en TODOS los pedidos
 function loadOrders() {
     const container = document.getElementById('orders-content');
     if (container) {
@@ -161,22 +210,39 @@ function loadOrders() {
     if (unsubscribeOrders) unsubscribeOrders();
 
     const ordersRef = collection(db, "orders");
-    const q = query(ordersRef, orderBy("createdAt", "desc"));
+    // Ordenar por fecha (campo 'date' como en tu firebase.js)
+    const q = query(ordersRef, orderBy("date", "desc"));
 
     unsubscribeOrders = onSnapshot(q, (snapshot) => {
         const newOrders = [];
         snapshot.forEach(doc => {
             const data = doc.data();
-            newOrders.push({
+            // Normalizar los datos del pedido (misma estructura que en settings.js)
+            const order = {
                 id: doc.id,
-                ...data,
-                createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt)
-            });
+                userId: data.userId || '',
+                userName: data.userName || data.customerName || 'Cliente',
+                userEmail: data.userEmail || '',
+                total: data.total || 0,
+                subtotal: data.subtotal || 0,
+                iva: data.iva || 0,
+                envio: data.envio || 0,
+                status: data.status || 'pendiente',
+                date: data.date ? new Date(data.date) : new Date(),
+                items: data.items || [],
+                address: data.address || {},
+                payment: data.payment || '',
+                shippingAddress: data.address?.address || data.shippingAddress || ''
+            };
+            newOrders.push(order);
         });
 
+        console.log('📦 Pedidos cargados:', newOrders.length);
+
+        // Detectar nuevos pedidos
         if (orders.length && newOrders.length > orders.length) {
             const newOrder = newOrders.find(o => !orders.some(e => e.id === o.id));
-            if (newOrder?.status === 'pending') {
+            if (newOrder && (newOrder.status === 'pendiente' || newOrder.status === 'pending')) {
                 showNewOrderNotification(newOrder);
             }
         }
@@ -184,6 +250,11 @@ function loadOrders() {
         orders = newOrders;
         updateStats();
         renderOrders();
+    }, (error) => {
+        console.error('Error cargando pedidos:', error);
+        if (container) {
+            container.innerHTML = '<div class="loading"><i class="fas fa-exclamation-triangle"></i><p>Error cargando pedidos</p></div>';
+        }
     });
 }
 
@@ -192,13 +263,17 @@ function updateStats() {
     today.setHours(0, 0, 0, 0);
 
     const total = orders.length;
-    const pending = orders.filter(o => o.status === 'pending').length;
-    const processing = orders.filter(o => o.status === 'processing').length;
+    const pending = orders.filter(o => o.status === 'pendiente' || o.status === 'pending').length;
+    const processing = orders.filter(o => o.status === 'procesando' || o.status === 'processing').length;
     const completedToday = orders.filter(o => {
-        return o.status === 'completed' && o.createdAt >= today;
+        const orderDate = new Date(o.date);
+        return (o.status === 'completado' || o.status === 'completed') && orderDate >= today;
     }).length;
     const revenueToday = orders
-        .filter(o => o.status === 'completed' && o.createdAt >= today)
+        .filter(o => {
+            const orderDate = new Date(o.date);
+            return (o.status === 'completado' || o.status === 'completed') && orderDate >= today;
+        })
         .reduce((sum, o) => sum + (o.total || 0), 0);
 
     const elements = {
@@ -219,13 +294,20 @@ function renderOrders() {
     let filteredOrders = [...orders];
 
     if (currentFilter !== 'all') {
-        filteredOrders = filteredOrders.filter(o => o.status === currentFilter);
+        const statusMap = {
+            'pending': ['pendiente', 'pending'],
+            'processing': ['procesando', 'processing'],
+            'completed': ['completado', 'completed'],
+            'cancelled': ['cancelado', 'cancelled']
+        };
+        const statusValues = statusMap[currentFilter] || [currentFilter];
+        filteredOrders = filteredOrders.filter(o => statusValues.includes(o.status));
     }
 
     if (searchTerm) {
         filteredOrders = filteredOrders.filter(o =>
             o.id.toLowerCase().includes(searchTerm) ||
-            (o.customerName && o.customerName.toLowerCase().includes(searchTerm)) ||
+            (o.userName && o.userName.toLowerCase().includes(searchTerm)) ||
             (o.userEmail && o.userEmail.toLowerCase().includes(searchTerm))
         );
     }
@@ -257,7 +339,7 @@ function renderOrders() {
                 <tbody>
                     ${filteredOrders.map(order => renderOrderRow(order)).join('')}
                 </tbody>
-            }
+            </table>
         `;
 
     container.innerHTML = table;
@@ -265,25 +347,43 @@ function renderOrders() {
 
 function renderOrderRow(order) {
     const statusText = {
-        pending: 'Pendiente',
-        processing: 'Procesando',
-        completed: 'Completado',
-        cancelled: 'Cancelado'
+        'pendiente': 'Pendiente',
+        'pending': 'Pendiente',
+        'procesando': 'Procesando',
+        'processing': 'Procesando',
+        'completado': 'Completado',
+        'completed': 'Completado',
+        'cancelado': 'Cancelado',
+        'cancelled': 'Cancelado'
     };
 
-    const date = order.createdAt instanceof Date ?
-        order.createdAt.toLocaleDateString('es-ES') :
-        new Date(order.createdAt).toLocaleDateString('es-ES');
+    const statusClass = {
+        'pendiente': 'pending',
+        'pending': 'pending',
+        'procesando': 'processing',
+        'processing': 'processing',
+        'completado': 'completed',
+        'completed': 'completed',
+        'cancelado': 'cancelled',
+        'cancelled': 'cancelled'
+    };
+
+    const date = order.date instanceof Date ?
+        order.date.toLocaleDateString('es-ES') :
+        new Date(order.date).toLocaleDateString('es-ES');
+
+    const displayStatus = statusText[order.status] || order.status;
+    const statusClassValue = statusClass[order.status] || order.status;
 
     return `
         <tr data-order-id="${order.id}">
             <td><strong>${order.id.slice(-8)}</strong></td>
-            <td>${order.customerName || order.userEmail || 'Cliente'}</td>
+            <td>${order.userName || order.userEmail || 'Cliente'}</td>
             <td>${date}</td>
             <td>$${(order.total || 0).toFixed(2)}</td>
             <td>
-                <span class="status-badge status-${order.status}">
-                    ${statusText[order.status]}
+                <span class="status-badge status-${statusClassValue}">
+                    ${displayStatus}
                 </span>
             </td>
             <td>
@@ -300,22 +400,23 @@ function renderOrderRow(order) {
 
 function getStatusButtons(order) {
     const buttons = [];
+    const status = order.status;
 
-    if (order.status === 'pending') {
+    if (status === 'pendiente' || status === 'pending') {
         buttons.push(`
-            <button class="action-btn update" onclick="window.orderManager.updateOrderStatus('${order.id}', 'processing')">
+            <button class="action-btn update" onclick="window.orderManager.updateOrderStatus('${order.id}', 'procesando')">
                 <i class="fas fa-cog"></i> Procesar
             </button>
-            <button class="action-btn cancel" onclick="window.orderManager.updateOrderStatus('${order.id}', 'cancelled')">
+            <button class="action-btn cancel" onclick="window.orderManager.updateOrderStatus('${order.id}', 'cancelado')">
                 <i class="fas fa-times"></i> Cancelar
             </button>
         `);
-    } else if (order.status === 'processing') {
+    } else if (status === 'procesando' || status === 'processing') {
         buttons.push(`
-            <button class="action-btn complete" onclick="window.orderManager.updateOrderStatus('${order.id}', 'completed')">
+            <button class="action-btn complete" onclick="window.orderManager.updateOrderStatus('${order.id}', 'completado')">
                 <i class="fas fa-check"></i> Completar
             </button>
-            <button class="action-btn cancel" onclick="window.orderManager.updateOrderStatus('${order.id}', 'cancelled')">
+            <button class="action-btn cancel" onclick="window.orderManager.updateOrderStatus('${order.id}', 'cancelado')">
                 <i class="fas fa-times"></i> Cancelar
             </button>
         `);
@@ -329,9 +430,9 @@ async function updateOrderStatus(orderId, newStatus) {
     if (!order) return;
 
     const confirmMessages = {
-        processing: '¿Marcar este pedido como en proceso?',
-        completed: '¿Marcar este pedido como completado?',
-        cancelled: '¿Cancelar este pedido?'
+        'procesando': '¿Marcar este pedido como en proceso?',
+        'completado': '¿Marcar este pedido como completado?',
+        'cancelado': '¿Cancelar este pedido?'
     };
 
     if (!confirm(confirmMessages[newStatus] || '¿Actualizar estado del pedido?')) {
@@ -341,7 +442,7 @@ async function updateOrderStatus(orderId, newStatus) {
     try {
         await updateDoc(doc(db, "orders", orderId), {
             status: newStatus,
-            updatedAt: new Date(),
+            updatedAt: new Date().toISOString(),
             updatedBy: currentUser?.uid
         });
 
@@ -369,9 +470,31 @@ function viewOrderDetails(orderId) {
     const modalBody = document.getElementById('modal-body');
     if (!modal || !modalBody) return;
 
-    const date = order.createdAt instanceof Date ?
-        order.createdAt.toLocaleString('es-ES') :
-        new Date(order.createdAt).toLocaleString('es-ES');
+    const date = order.date instanceof Date ?
+        order.date.toLocaleString('es-ES') :
+        new Date(order.date).toLocaleString('es-ES');
+
+    const statusText = {
+        'pendiente': 'Pendiente',
+        'pending': 'Pendiente',
+        'procesando': 'Procesando',
+        'processing': 'Procesando',
+        'completado': 'Completado',
+        'completed': 'Completado',
+        'cancelado': 'Cancelado',
+        'cancelled': 'Cancelado'
+    };
+
+    const statusClass = {
+        'pendiente': 'pending',
+        'pending': 'pending',
+        'procesando': 'processing',
+        'processing': 'processing',
+        'completado': 'completed',
+        'completed': 'completed',
+        'cancelado': 'cancelled',
+        'cancelled': 'cancelled'
+    };
 
     modalBody.innerHTML = `
         <div class="order-detail-item">
@@ -381,7 +504,7 @@ function viewOrderDetails(orderId) {
         
         <div class="order-detail-item">
             <div class="order-detail-label">Cliente</div>
-            <div class="order-detail-value">${order.customerName || order.userEmail || 'No especificado'}</div>
+            <div class="order-detail-value">${order.userName || order.userEmail || 'No especificado'}</div>
         </div>
         
         <div class="order-detail-item">
@@ -391,7 +514,12 @@ function viewOrderDetails(orderId) {
         
         <div class="order-detail-item">
             <div class="order-detail-label">Dirección de Envío</div>
-            <div class="order-detail-value">${order.shippingAddress || 'No especificada'}</div>
+            <div class="order-detail-value">${order.shippingAddress || (order.address?.address) || 'No especificada'}</div>
+        </div>
+        
+        <div class="order-detail-item">
+            <div class="order-detail-label">Método de Pago</div>
+            <div class="order-detail-value">${order.payment || 'No especificado'}</div>
         </div>
         
         <div class="order-detail-item">
@@ -402,7 +530,19 @@ function viewOrderDetails(orderId) {
                     <span>$${(item.price * item.quantity).toFixed(2)}</span>
                 </div>
             `).join('') : '<p>No hay productos</p>'}
-            <div class="product-item" style="background: #f0f0f0; font-weight: bold;">
+            <div class="product-item" style="background: #f0f0f0;">
+                <span>Subtotal</span>
+                <span>$${(order.subtotal || 0).toFixed(2)}</span>
+            </div>
+            <div class="product-item" style="background: #f0f0f0;">
+                <span>IVA (16%)</span>
+                <span>$${(order.iva || 0).toFixed(2)}</span>
+            </div>
+            <div class="product-item" style="background: #f0f0f0;">
+                <span>Envío</span>
+                <span>$${(order.envio || 0).toFixed(2)}</span>
+            </div>
+            <div class="product-item" style="background: #e0e0e0; font-weight: bold;">
                 <span>Total</span>
                 <span>$${(order.total || 0).toFixed(2)}</span>
             </div>
@@ -411,10 +551,8 @@ function viewOrderDetails(orderId) {
         <div class="order-detail-item">
             <div class="order-detail-label">Estado Actual</div>
             <div class="order-detail-value">
-                <span class="status-badge status-${order.status}">
-                    ${order.status === 'pending' ? 'Pendiente' :
-            order.status === 'processing' ? 'Procesando' :
-                order.status === 'completed' ? 'Completado' : 'Cancelado'}
+                <span class="status-badge status-${statusClass[order.status] || order.status}">
+                    ${statusText[order.status] || order.status}
                 </span>
             </div>
         </div>
@@ -554,7 +692,6 @@ onAuthStateChanged(auth, async (user) => {
             showLoginRequired('No eres administrador. Inicia sesión con cuenta de admin.');
         }
     } else {
-        // Verificar sesión guardada
         const savedSession = sessionStorage.getItem('user');
         if (savedSession) {
             const userData = JSON.parse(savedSession);
@@ -571,7 +708,7 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
 
-// Inicializar eventos cuando el DOM esté listo
+// Inicializar eventos
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', setupEventListeners);
 } else {
