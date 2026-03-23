@@ -39,6 +39,80 @@ let searchTerm = '';
 let unsubscribeOrders = null;
 let notificationPermission = false;
 
+// ==================== SISTEMA DE SONIDO ====================
+let audioElement = null;
+let userInteracted = false;
+
+// Crear elemento de audio
+function initAudio() {
+    if (!audioElement) {
+        audioElement = new Audio();
+        audioElement.src = './assets/sounds/cash-register.mp3';
+        audioElement.volume = 0.5;
+        audioElement.load();
+        console.log('🔊 Audio inicializado');
+    }
+}
+
+// Marcar que el usuario ha interactuado
+function markUserInteracted() {
+    if (!userInteracted) {
+        userInteracted = true;
+        console.log('✅ Usuario ha interactuado con la página');
+        // Intentar reproducir un sonido de prueba en silencio para "activar" el audio
+        if (audioElement) {
+            audioElement.play().then(() => {
+                audioElement.pause();
+                audioElement.currentTime = 0;
+                console.log('🔊 Audio activado');
+            }).catch(e => console.log('Audio no activado aún'));
+        }
+    }
+}
+
+// Escuchar eventos de interacción del usuario
+function setupUserInteractionListeners() {
+    const events = ['click', 'touchstart', 'keydown', 'scroll', 'mousemove'];
+    events.forEach(event => {
+        document.addEventListener(event, markUserInteracted, { once: true });
+    });
+}
+
+// Reproducir sonido
+function playNotificationSound() {
+    if (!audioElement) {
+        initAudio();
+    }
+
+    if (!userInteracted) {
+        console.log('🔇 Sonido no reproducido: usuario no ha interactuado aún');
+        return;
+    }
+
+    try {
+        // Reiniciar el audio si ya estaba sonando
+        audioElement.currentTime = 0;
+        const playPromise = audioElement.play();
+
+        if (playPromise !== undefined) {
+            playPromise.catch(error => {
+                console.log('Error reproduciendo sonido:', error);
+                // Fallback: intentar con un sonido simple si el archivo no existe
+                try {
+                    const fallback = new Audio();
+                    fallback.src = 'data:audio/wav;base64,U3RlcmVvIFdhdmUgRm9ybWF0IEluY2x1ZGVk';
+                    fallback.volume = 0.3;
+                    fallback.play();
+                } catch (e) {
+                    console.log('Sonido no disponible');
+                }
+            });
+        }
+    } catch (e) {
+        console.log('Error con audio:', e);
+    }
+}
+
 // ==================== NOTIFICACIONES ====================
 
 async function registerSW() {
@@ -150,12 +224,8 @@ function showNewOrderNotification(order) {
         type: 'success'
     });
 
-    try {
-        const audio = new Audio();
-        audio.src = './assets/sounds/cash-register.mp3';
-        audio.volume = 0.5;
-        audio.play().catch(e => console.log('Error reproduciendo sonido:', e));
-    } catch (e) { }
+    // Reproducir sonido (solo si el usuario ya interactuó)
+    playNotificationSound();
 }
 
 function testNotification() {
@@ -174,31 +244,12 @@ function testNotification() {
         message: notificationPermission ? '✅ Notificaciones OK' : '⚠️ Permiso no concedido',
         type: notificationPermission ? 'success' : 'warning'
     });
+
+    // Probar sonido
+    playNotificationSound();
 }
 
 // ==================== PEDIDOS ====================
-
-// Función para obtener TODOS los pedidos (para admin)
-async function getAllOrders() {
-    try {
-        const ordersRef = collection(db, "orders");
-        const q = query(ordersRef, orderBy("date", "desc"));
-        const querySnapshot = await getDocs(q);
-
-        const orders = [];
-        querySnapshot.forEach((doc) => {
-            orders.push({
-                id: doc.id,
-                ...doc.data()
-            });
-        });
-
-        return orders;
-    } catch (e) {
-        console.error("Error obteniendo todos los pedidos: ", e);
-        return [];
-    }
-}
 
 // Escuchar cambios en tiempo real en TODOS los pedidos
 function loadOrders() {
@@ -210,14 +261,12 @@ function loadOrders() {
     if (unsubscribeOrders) unsubscribeOrders();
 
     const ordersRef = collection(db, "orders");
-    // Ordenar por fecha (campo 'date' como en tu firebase.js)
     const q = query(ordersRef, orderBy("date", "desc"));
 
     unsubscribeOrders = onSnapshot(q, (snapshot) => {
         const newOrders = [];
         snapshot.forEach(doc => {
             const data = doc.data();
-            // Normalizar los datos del pedido (misma estructura que en settings.js)
             const order = {
                 id: doc.id,
                 userId: data.userId || '',
@@ -685,6 +734,9 @@ onAuthStateChanged(auth, async (user) => {
 
         if (isAdmin) {
             console.log('✅ Admin autenticado:', user.email);
+            // Inicializar audio
+            initAudio();
+            setupUserInteractionListeners();
             await registerSW();
             await requestNotificationPermission();
             loadOrders();
@@ -698,6 +750,8 @@ onAuthStateChanged(auth, async (user) => {
             if (userData.isAdmin) {
                 console.log('✅ Sesión admin encontrada:', userData.email);
                 currentUser = userData;
+                initAudio();
+                setupUserInteractionListeners();
                 registerSW();
                 requestNotificationPermission();
                 loadOrders();
