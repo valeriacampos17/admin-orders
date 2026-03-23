@@ -1,53 +1,70 @@
-const CACHE_NAME = 'vale-shop-cache-v1';
+const CACHE_NAME = 'vale-shop-admin-v3';
 
-// Usamos rutas relativas para que funcione en cualquier servidor
+// Rutas relativas para la carpeta admin-orders
 const urlsToCache = [
     './',
     './admin-orders.html',
+    './signin.html',
+    './manifest.json',
+    './assets/css/admin.css',
+    './assets/js/admin-orders.js',
+    './assets/icons/icon-120x120.png',
+    './assets/icons/icon-167x167.png',
+    './assets/icons/icon-180x180.png',
+    './assets/icons/icon-192x192.png',
+    './assets/icons/icon-512x512.png'
 ];
 
 // Instalación
 self.addEventListener('install', event => {
+    console.log('[SW Admin] Instalando versión:', CACHE_NAME);
     event.waitUntil(
         caches.open(CACHE_NAME).then(cache => {
-            console.log('Abriendo caché y añadiendo recursos');
+            console.log('[SW Admin] Cacheando recursos');
             return cache.addAll(urlsToCache);
+        }).catch(error => {
+            console.error('[SW Admin] Error en instalación:', error);
         })
     );
     self.skipWaiting();
 });
 
-// Activación
+// Activación - Limpiar cachés antiguas
 self.addEventListener('activate', event => {
-    const cacheWhitelist = [CACHE_NAME];
+    console.log('[SW Admin] Activando versión:', CACHE_NAME);
     event.waitUntil(
         caches.keys().then(cacheNames => {
             return Promise.all(
                 cacheNames.map(cacheName => {
-                    if (cacheWhitelist.indexOf(cacheName) === -1) {
+                    if (cacheName !== CACHE_NAME) {
+                        console.log('[SW Admin] Eliminando caché:', cacheName);
                         return caches.delete(cacheName);
                     }
                 })
             );
-        }).then(() => self.clients.claim())
+        }).then(() => {
+            console.log('[SW Admin] Activación completada');
+            return self.clients.claim();
+        })
     );
 });
 
 // Escuchar mensajes desde la página
 self.addEventListener('message', (event) => {
-    if (event.data && event.data.type === 'SHOW_ORDER_NOTIFICATION') {
+    console.log('[SW Admin] Mensaje recibido:', event.data);
+    if (event.data?.type === 'SHOW_ORDER_NOTIFICATION') {
         const order = event.data.order;
         showOrderNotification(order);
     }
 });
 
-// Función para mostrar notificación de nuevo pedido
+// Mostrar notificación de nuevo pedido
 function showOrderNotification(order) {
-    if (!(self.registration && self.registration.showNotification)) return;
+    if (!self.registration?.showNotification) return;
 
     const notificationTitle = `📦 Nuevo Pedido #${order.id?.slice(-6) || 'Nuevo'}`;
     const notificationOptions = {
-        body: `${order.userName || order.customerName || 'Cliente'} - Total: $${(order.total || 0).toFixed(2)}\n${order.items?.length || 0} producto(s)`,
+        body: `${order.customerName || order.userName || 'Cliente'} - $${(order.total || 0).toFixed(2)}`,
         icon: './assets/icons/icon-192x192.png',
         badge: './assets/icons/icon-192x192.png',
         vibrate: [200, 100, 200],
@@ -66,25 +83,24 @@ function showOrderNotification(order) {
     self.registration.showNotification(notificationTitle, notificationOptions);
 }
 
-// Manejar notificaciones push desde Firebase
+// Manejar notificaciones push (desde Firebase)
 self.addEventListener('push', (event) => {
-    console.log('Push recibido:', event);
+    console.log('[SW Admin] Push recibido:', event);
 
-    if (!(self.registration && self.registration.showNotification)) return;
+    if (!self.registration?.showNotification) return;
 
     let data = {};
     try {
         if (event.data) {
             data = event.data.json();
-            console.log('Datos del push:', data);
+            console.log('[SW Admin] Datos del push:', data);
         }
     } catch (e) {
-        console.error('Error parseando push data:', e);
+        console.error('[SW Admin] Error parseando push data:', e);
     }
 
-    // Si es una notificación de Firebase Cloud Messaging
     const notification = data.notification || data;
-    const notificationTitle = notification.title || '📦 Vale-Shop - Nuevo Pedido';
+    const notificationTitle = notification.title || '📦 Nuevo Pedido';
     const notificationOptions = {
         body: notification.body || 'Hay un nuevo pedido pendiente de revisión',
         icon: notification.icon || './assets/icons/icon-192x192.png',
@@ -96,7 +112,7 @@ self.addEventListener('push', (event) => {
         },
         actions: [
             { action: 'open', title: 'Ver Pedidos' }
-        ],
+        ]
     };
 
     event.waitUntil(
@@ -106,7 +122,7 @@ self.addEventListener('push', (event) => {
 
 // Manejar clic en notificaciones
 self.addEventListener('notificationclick', (event) => {
-    console.log('Notificación clickeada:', event);
+    console.log('[SW Admin] Notificación clickeada:', event);
     event.notification.close();
 
     const action = event.action;
@@ -114,7 +130,7 @@ self.addEventListener('notificationclick', (event) => {
     let url = notificationData?.url || './admin-orders.html';
     const orderId = notificationData?.orderId;
 
-    // Si se hizo clic en "Ver Pedido" y hay ID
+    // Determinar URL según la acción
     if (action === 'view' && orderId) {
         url = `./admin-orders.html?order=${orderId}`;
     } else if (action === 'view-all') {
@@ -124,12 +140,11 @@ self.addEventListener('notificationclick', (event) => {
     event.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true })
             .then(windowClients => {
-                // Buscar si ya hay una ventana abierta con la URL
+                // Buscar ventana existente
                 for (let client of windowClients) {
-                    if (client.url.includes(url.split('?')[0]) && 'focus' in client) {
-                        // Si hay una ventana con la página, la enfocamos
+                    if (client.url.includes('admin-orders') && 'focus' in client) {
                         client.focus();
-                        // Si tiene orderId, enviamos un mensaje para abrir el modal
+                        // Enviar mensaje para abrir el pedido específico
                         if (orderId && client.postMessage) {
                             client.postMessage({
                                 type: 'OPEN_ORDER',
@@ -147,22 +162,52 @@ self.addEventListener('notificationclick', (event) => {
     );
 });
 
-// Estrategia de carga: Cache First con fallback a red
+// Estrategia de carga
 self.addEventListener('fetch', event => {
-    // Ignorar peticiones a firebase y otros dominios externos
-    if (event.request.url.includes('firebase') ||
-        event.request.url.includes('googleapis') ||
-        event.request.url.includes('cloudflare') ||
-        event.request.url.includes('firebaseio.com')) {
+    const url = event.request.url;
+
+    // Ignorar peticiones a Firebase y externos
+    if (url.includes('firebase') ||
+        url.includes('googleapis') ||
+        url.includes('cloudflare') ||
+        url.includes('firebaseio.com')) {
         return;
     }
 
+    // Para admin-orders.html, usar Network First
+    if (url.includes('admin-orders.html')) {
+        event.respondWith(
+            fetch(event.request)
+                .then(response => {
+                    const responseClone = response.clone();
+                    caches.open(CACHE_NAME).then(cache => {
+                        cache.put(event.request, responseClone);
+                    });
+                    return response;
+                })
+                .catch(() => {
+                    return caches.match(event.request);
+                })
+        );
+        return;
+    }
+
+    // Para assets estáticos, usar Cache First
+    if (url.includes('/assets/')) {
+        event.respondWith(
+            caches.match(event.request).then(response => {
+                return response || fetch(event.request);
+            })
+        );
+        return;
+    }
+
+    // Para el resto, Cache First con fallback
     event.respondWith(
         caches.match(event.request).then(response => {
             return response || fetch(event.request).catch(() => {
-                // Fallback para cuando no hay conexión
                 if (event.request.mode === 'navigate') {
-                    return caches.match('./index.html');
+                    return caches.match('./admin-orders.html');
                 }
             });
         })

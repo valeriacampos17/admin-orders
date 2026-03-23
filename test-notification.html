@@ -1,34 +1,657 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-    <title>Test Notificaciones</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Vale-Shop - Test de Notificaciones</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .test-container {
+            max-width: 600px;
+            width: 100%;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            animation: slideUp 0.5s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .test-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .test-header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .test-header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .test-body {
+            padding: 30px;
+        }
+
+        .info-card {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .info-card h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            margin-left: 10px;
+        }
+
+        .status-success {
+            background: #c8e6d9;
+            color: #00b894;
+        }
+
+        .status-error {
+            background: #ffd6d6;
+            color: #e17055;
+        }
+
+        .status-warning {
+            background: #ffeaa7;
+            color: #d63031;
+        }
+
+        .status-info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: #555;
+        }
+
+        .info-value {
+            color: #333;
+            word-break: break-all;
+            text-align: right;
+            max-width: 60%;
+        }
+
+        .token-display {
+            background: #f0f0f0;
+            padding: 10px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 12px;
+            word-break: break-all;
+            margin-top: 10px;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .log-container {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 20px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .log-entry {
+            padding: 5px 0;
+            border-bottom: 1px solid #333;
+            font-size: 11px;
+        }
+
+        .log-entry.success {
+            color: #4caf50;
+        }
+
+        .log-entry.error {
+            color: #f44336;
+        }
+
+        .log-entry.info {
+            color: #2196f3;
+        }
+
+        .log-entry.warning {
+            color: #ff9800;
+        }
+
+        .log-timestamp {
+            color: #888;
+            margin-right: 10px;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            display: inline-block;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 480px) {
+            .test-body {
+                padding: 20px;
+            }
+            
+            .btn-group {
+                flex-direction: column;
+            }
+            
+            .info-value {
+                max-width: 50%;
+                font-size: 12px;
+            }
+        }
+    </style>
 </head>
 <body>
-    <h1>Test de Notificaciones Vale-Shop</h1>
-    <button onclick="testNotification()">Probar Notificación</button>
-    
-    <script type="module">
-        import { getMessaging, getToken } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-messaging.js";
-        import { app } from './assets/js/firebase.js';
+    <div class="test-container">
+        <div class="test-header">
+            <h1>
+                <i class="fas fa-bell"></i>
+                Test de Notificaciones
+            </h1>
+            <p>Prueba el sistema de notificaciones push</p>
+        </div>
         
-        window.testNotification = async () => {
-            const messaging = getMessaging(app);
-            const registration = await navigator.serviceWorker.register('/service-worker.js');
+        <div class="test-body">
+            <div class="info-card">
+                <h3>
+                    <i class="fas fa-info-circle"></i>
+                    Estado del Sistema
+                    <span id="status-badge" class="status-badge status-warning">Verificando...</span>
+                </h3>
+                <div class="info-row">
+                    <span class="info-label">Service Worker:</span>
+                    <span class="info-value" id="sw-status">Verificando...</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Permiso de Notificaciones:</span>
+                    <span class="info-value" id="permission-status">Verificando...</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Token FCM:</span>
+                    <span class="info-value" id="token-status">No obtenido</span>
+                </div>
+                <div id="token-display" class="token-display" style="display: none;"></div>
+            </div>
             
-            const token = await getToken(messaging, {
-                vapidKey: 'BO905tgtG6e5FIrh-d9bIXVZuL6cv024kw1ygHLDwrrMk55S06h7elY0YuKKpNR4egBoSabvG-OS6kbGTrfF9A0',
-                serviceWorkerRegistration: registration
-            });
+            <div class="btn-group">
+                <button class="btn btn-primary" id="test-notification-btn">
+                    <i class="fas fa-bell"></i> Probar Notificación
+                </button>
+                <button class="btn btn-success" id="request-permission-btn">
+                    <i class="fas fa-check-circle"></i> Solicitar Permiso
+                </button>
+                <button class="btn btn-secondary" id="get-token-btn">
+                    <i class="fas fa-key"></i> Obtener Token
+                </button>
+                <button class="btn btn-danger" id="clear-sw-btn">
+                    <i class="fas fa-trash"></i> Limpiar SW
+                </button>
+            </div>
             
-            console.log('Token:', token);
-            alert('Token obtenido: ' + token);
-            
-            // Simular notificación
-            registration.showNotification('Test Vale-Shop', {
-                body: 'Esta es una notificación de prueba',
-                icon: '/assets/icons/icon-192x192.png'
-            });
+            <div class="log-container">
+                <div style="margin-bottom: 10px; color: #fff; font-weight: bold;">
+                    <i class="fas fa-terminal"></i> Log de Eventos
+                </div>
+                <div id="log-content"></div>
+            </div>
+        </div>
+    </div>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script type="importmap">
+        {
+            "imports": {
+                "firebase/app": "https://www.gstatic.com/firebasejs/10.14.0/firebase-app.js",
+                "firebase/messaging": "https://www.gstatic.com/firebasejs/10.14.0/firebase-messaging.js"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import { initializeApp } from "firebase/app";
+        import { getMessaging, getToken, onMessage } from "firebase/messaging";
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBooZYVeqEWugoLudlTLwytNaYGWxD83Wc",
+            authDomain: "vale-shop.firebaseapp.com",
+            databaseURL: "https://vale-shop-default-rtdb.firebaseio.com",
+            projectId: "vale-shop",
+            storageBucket: "vale-shop.appspot.com",
+            messagingSenderId: "280352853383",
+            appId: "1:280352853383:web:2d48393a1426bd8ff2d722"
         };
+
+        const VAPID_KEY = 'BO905tgtG6e5FIrh-d9bIXVZuL6cv024kw1ygHLDwrrMk55S06h7elY0YuKKpNR4egBoSabvG-OS6kbGTrfF9A0';
+
+        // Inicializar Firebase
+        const app = initializeApp(firebaseConfig);
+        const messaging = getMessaging(app);
+
+        let currentToken = null;
+        let swRegistration = null;
+
+        // Función para agregar logs
+        function addLog(message, type = 'info') {
+            const logContent = document.getElementById('log-content');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry ${type}`;
+            logEntry.innerHTML = `
+                <span class="log-timestamp">[${timestamp}]</span>
+                <span>${message}</span>
+            `;
+            logContent.insertBefore(logEntry, logContent.firstChild);
+            
+            // Limitar logs
+            while (logContent.children.length > 50) {
+                logContent.removeChild(logContent.lastChild);
+            }
+            
+            console.log(`[${timestamp}] ${message}`);
+        }
+
+        // Actualizar estado en UI
+        function updateStatus(swStatus, permissionStatus, tokenStatus) {
+            const swEl = document.getElementById('sw-status');
+            const permissionEl = document.getElementById('permission-status');
+            const tokenEl = document.getElementById('token-status');
+            const badge = document.getElementById('status-badge');
+            
+            if (swEl) swEl.textContent = swStatus;
+            if (permissionEl) permissionEl.textContent = permissionStatus;
+            if (tokenEl) tokenEl.textContent = tokenStatus;
+            
+            // Actualizar badge
+            if (swStatus === '✅ Activo' && permissionStatus === '✅ Concedido' && tokenStatus === '✅ Obtenido') {
+                badge.textContent = '✅ Todo OK';
+                badge.className = 'status-badge status-success';
+            } else if (permissionStatus === '❌ Denegado') {
+                badge.textContent = '⚠️ Permiso Denegado';
+                badge.className = 'status-badge status-error';
+            } else if (swStatus === '❌ No registrado') {
+                badge.textContent = '⚠️ SW no disponible';
+                badge.className = 'status-badge status-warning';
+            } else {
+                badge.textContent = '🔄 Configurando...';
+                badge.className = 'status-badge status-info';
+            }
+        }
+
+        // Registrar Service Worker
+        async function registerServiceWorker() {
+            addLog('Registrando Service Worker...', 'info');
+            
+            if (!('serviceWorker' in navigator)) {
+                addLog('❌ Service Worker no soportado en este navegador', 'error');
+                updateStatus('❌ No soportado', 'N/A', 'N/A');
+                return null;
+            }
+            
+            try {
+                // Limpiar registros anteriores si existen
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                for (const reg of registrations) {
+                    if (reg.active && reg.active.scriptURL.includes('service-worker.js')) {
+                        addLog('⚠️ Service Worker existente encontrado, será reemplazado', 'warning');
+                    }
+                }
+                
+                const registration = await navigator.serviceWorker.register('./service-worker.js', { scope: './' });
+                swRegistration = registration;
+                addLog(`✅ Service Worker registrado: ${registration.scope}`, 'success');
+                updateStatus('✅ Activo', 'Verificando...', 'No obtenido');
+                return registration;
+            } catch (error) {
+                addLog(`❌ Error registrando SW: ${error.message}`, 'error');
+                updateStatus('❌ Error', 'N/A', 'N/A');
+                return null;
+            }
+        }
+
+        // Solicitar permiso de notificaciones
+        async function requestNotificationPermission() {
+            addLog('Solicitando permiso de notificaciones...', 'info');
+            
+            if (!('Notification' in window)) {
+                addLog('❌ Notificaciones no soportadas', 'error');
+                updateStatus('N/A', '❌ No soportado', 'N/A');
+                return false;
+            }
+            
+            if (Notification.permission === 'granted') {
+                addLog('✅ Permiso ya concedido', 'success');
+                updateStatus('Verificando...', '✅ Concedido', 'Verificando...');
+                return true;
+            }
+            
+            if (Notification.permission === 'denied') {
+                addLog('❌ Permiso denegado previamente. Debes habilitarlo manualmente en la configuración del navegador.', 'error');
+                updateStatus('Verificando...', '❌ Denegado', 'No obtenido');
+                return false;
+            }
+            
+            try {
+                const permission = await Notification.requestPermission();
+                const granted = permission === 'granted';
+                
+                if (granted) {
+                    addLog('✅ Permiso de notificaciones concedido', 'success');
+                    updateStatus('Verificando...', '✅ Concedido', 'Obteniendo...');
+                } else {
+                    addLog('❌ Permiso de notificaciones denegado', 'error');
+                    updateStatus('Verificando...', '❌ Denegado', 'No obtenido');
+                }
+                
+                return granted;
+            } catch (error) {
+                addLog(`❌ Error solicitando permiso: ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        // Obtener token FCM
+        async function getFCMToken() {
+            addLog('Obteniendo token FCM...', 'info');
+            
+            if (!swRegistration) {
+                addLog('⚠️ Service Worker no registrado, registrando primero...', 'warning');
+                await registerServiceWorker();
+            }
+            
+            if (Notification.permission !== 'granted') {
+                addLog('⚠️ Permiso de notificaciones no concedido. Solicitando...', 'warning');
+                const granted = await requestNotificationPermission();
+                if (!granted) {
+                    addLog('❌ No se puede obtener token sin permiso', 'error');
+                    return null;
+                }
+            }
+            
+            try {
+                const token = await getToken(messaging, {
+                    vapidKey: VAPID_KEY,
+                    serviceWorkerRegistration: swRegistration
+                });
+                
+                if (token) {
+                    currentToken = token;
+                    addLog(`✅ Token FCM obtenido: ${token.substring(0, 30)}...`, 'success');
+                    updateStatus('✅ Activo', '✅ Concedido', '✅ Obtenido');
+                    
+                    // Mostrar token completo
+                    const tokenDisplay = document.getElementById('token-display');
+                    tokenDisplay.style.display = 'block';
+                    tokenDisplay.innerHTML = `<strong>Token completo:</strong><br>${token}`;
+                    
+                    return token;
+                } else {
+                    addLog('❌ No se pudo obtener el token FCM', 'error');
+                    updateStatus('✅ Activo', '✅ Concedido', '❌ No obtenido');
+                    return null;
+                }
+            } catch (error) {
+                addLog(`❌ Error obteniendo token: ${error.message}`, 'error');
+                updateStatus('✅ Activo', '✅ Concedido', '❌ Error');
+                return null;
+            }
+        }
+
+        // Probar notificación
+        async function testNotification() {
+            addLog('🔔 Probando notificación...', 'info');
+            
+            // Asegurar que tenemos todo listo
+            if (!swRegistration) {
+                await registerServiceWorker();
+            }
+            
+            if (Notification.permission !== 'granted') {
+                await requestNotificationPermission();
+            }
+            
+            if (!currentToken) {
+                await getFCMToken();
+            }
+            
+            // Mostrar notificación nativa
+            if (Notification.permission === 'granted' && swRegistration) {
+                try {
+                    await swRegistration.showNotification('🔔 Vale-Shop - Notificación de Prueba', {
+                        body: '¡Las notificaciones funcionan correctamente!',
+                        icon: './assets/icons/icon-192x192.png',
+                        badge: './assets/icons/icon-192x192.png',
+                        vibrate: [200, 100, 200],
+                        data: {
+                            url: './admin-orders.html',
+                            test: true
+                        },
+                        actions: [
+                            { action: 'open', title: 'Abrir Panel' },
+                            { action: 'dismiss', title: 'Cerrar' }
+                        ]
+                    });
+                    addLog('✅ Notificación mostrada exitosamente', 'success');
+                } catch (error) {
+                    addLog(`❌ Error mostrando notificación: ${error.message}`, 'error');
+                }
+            } else {
+                addLog('❌ No se puede mostrar notificación: permisos no concedidos o SW no registrado', 'error');
+            }
+        }
+
+        // Limpiar Service Worker y caché
+        async function clearServiceWorker() {
+            addLog('🧹 Limpiando Service Workers y caché...', 'warning');
+            
+            try {
+                // Desregistrar SW
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                for (const reg of registrations) {
+                    await reg.unregister();
+                    addLog(`✅ Service Worker desregistrado: ${reg.scope}`, 'success');
+                }
+                
+                // Limpiar caché
+                const cacheKeys = await caches.keys();
+                for (const key of cacheKeys) {
+                    await caches.delete(key);
+                    addLog(`✅ Caché eliminado: ${key}`, 'success');
+                }
+                
+                // Limpiar variables
+                swRegistration = null;
+                currentToken = null;
+                
+                // Ocultar token
+                document.getElementById('token-display').style.display = 'none';
+                
+                addLog('✅ Limpieza completada. Recargando página en 2 segundos...', 'success');
+                updateStatus('❌ No registrado', 'Verificando...', 'No obtenido');
+                
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2000);
+                
+            } catch (error) {
+                addLog(`❌ Error limpiando: ${error.message}`, 'error');
+            }
+        }
+
+        // Inicializar al cargar la página
+        async function init() {
+            addLog('🚀 Iniciando test de notificaciones', 'info');
+            
+            // Verificar estado inicial
+            const registrations = await navigator.serviceWorker.getRegistrations();
+            if (registrations.length > 0) {
+                swRegistration = registrations[0];
+                updateStatus('✅ Activo', Notification.permission === 'granted' ? '✅ Concedido' : Notification.permission === 'denied' ? '❌ Denegado' : '⏳ Pendiente', 'No obtenido');
+                addLog(`✅ Service Worker existente encontrado`, 'success');
+                
+                // Intentar obtener token si ya hay permiso
+                if (Notification.permission === 'granted') {
+                    await getFCMToken();
+                }
+            } else {
+                updateStatus('❌ No registrado', Notification.permission === 'granted' ? '✅ Concedido' : Notification.permission === 'denied' ? '❌ Denegado' : '⏳ Pendiente', 'No obtenido');
+                addLog('⚠️ No hay Service Worker registrado', 'warning');
+            }
+        }
+
+        // Configurar event listeners
+        document.getElementById('test-notification-btn').addEventListener('click', testNotification);
+        document.getElementById('request-permission-btn').addEventListener('click', requestNotificationPermission);
+        document.getElementById('get-token-btn').addEventListener('click', getFCMToken);
+        document.getElementById('clear-sw-btn').addEventListener('click', clearServiceWorker);
+        
+        // Escuchar mensajes en primer plano
+        onMessage(messaging, (payload) => {
+            addLog(`📨 Mensaje FCM recibido: ${payload.notification?.title || 'Sin título'}`, 'info');
+            addLog(`📝 Datos: ${JSON.stringify(payload)}`, 'info');
+        });
+        
+        // Iniciar
+        init();
     </script>
 </body>
 </html>
