@@ -152,9 +152,9 @@ function showNewOrderNotification(order) {
 
     try {
         const audio = new Audio();
-        audio.src = 'data:audio/wav;base64,U3RlcmVvIFdhdmUgRm9ybWF0IEluY2x1ZGVk';
-        audio.volume = 0.3;
-        audio.play();
+        audio.src = './assets/sounds/cash-register.mp3';
+        audio.volume = 0.5;
+        audio.play().catch(e => console.log('Error reproduciendo sonido:', e));
     } catch (e) { }
 }
 
